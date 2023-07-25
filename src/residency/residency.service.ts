@@ -17,6 +17,6 @@ export class ResidencyService {
   public async createResidency(residencyDto: AddResidencyDto, house: House) {
     const residency = this.repo.create(residencyDto);
     residency.house = house;
-    return this.repo.save(residency);
+    return await this.repo.save(residency);
   }
 }

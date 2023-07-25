@@ -1,7 +1,7 @@
 ### variables
 //@url=http://localhost:3000
 @url=https://mighty-bastion-42357-373544063ef9.herokuapp.com
-@ubid=18af82e2-b485-445c-a8ca-78f1f5ba23f8
+@ubid=9e04f5ff-c400-474e-a573-dbd76498ad28
 
 ### register a house 
 POST {{url}}/v1/house
@@ -30,8 +30,8 @@ content-type: application/json
 X-UBID: {{ubid}}
 
 {
-  "birds": 4,
-  "eggs": 10
+  "birds": 5,
+  "eggs": 15
 }
 
 ### get one house

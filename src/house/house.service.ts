@@ -12,6 +12,11 @@ import { AddResidencyDto } from '../residency/dtos/add-residency.dto';
 import { ResidencyService } from '../residency/residency.service';
 import { CreateHouseDto } from './dtos/create-house.dto';
 import { UpdateHouseInfoDto } from './dtos/update-house-info.dto';
+import { FindHousesDto } from './dtos/find-houses.dto';
+import {
+  transformFromDto,
+  transformToDto,
+} from './transformers/house.transformer';
 
 /*
   Provides house entity operations
@@ -35,7 +40,7 @@ export class HouseService {
       id: uuid,
       ubid: uuid,
       active: true,
-      ...this.transformFromDto(houseDto),
+      ...transformFromDto(houseDto),
     });
     await this.repo.save(house);
 
@@ -52,8 +57,9 @@ export class HouseService {
       throw new NotFoundException('house not found');
     }
 
-    Object.assign(house, this.transformFromDto(attrs));
-    return await this.repo.save(house);
+    Object.assign(house, transformFromDto(attrs));
+    const saved = await this.repo.save(house);
+    return transformToDto(saved);
   }
 
   async updateStatus(id: string, status: boolean) {
@@ -66,7 +72,8 @@ export class HouseService {
       throw new NotFoundException('house not found');
     }
     house.active = status;
-    return await this.repo.save(house);
+    const saved = await this.repo.save(house);
+    return transformToDto(saved);
   }
 
   async addResidency(id: string, residencyDto: AddResidencyDto) {
@@ -104,7 +111,7 @@ export class HouseService {
         residencyHistory: true,
       },
     });
-    return this.transformToDto(house);
+    return transformToDto(house);
   }
 
   async findHouses(limit: number, page: number, activeOnly?: boolean) {
@@ -125,10 +132,10 @@ export class HouseService {
 
     return {
       data: result.map((house) => {
-        return { ...house, ...this.transformToDto(house) };
+        return { ...house, ...transformToDto(house) };
       }),
       count: total,
-    };
+    } as FindHousesDto;
   }
 
   async pruneHouses(date: Date) {
@@ -144,29 +151,12 @@ export class HouseService {
     ).map((house) => house.id);
     console.log(idsOfHousesToPrune);
 
-    await this.repo
+    const result = await this.repo
       .createQueryBuilder()
       .update(House)
       .set({ active: false })
       .whereInIds(idsOfHousesToPrune)
       .execute();
-  }
-
-  private transformFromDto(
-    dto: CreateHouseDto | UpdateHouseInfoDto,
-  ): Partial<House> {
-    return {
-      ...dto,
-      lat: dto.lat.toString(),
-      lng: dto.lng.toString(),
-    };
-  }
-
-  private transformToDto(house: House) {
-    return {
-      ...house,
-      lat: parseFloat(house.lat),
-      lng: parseFloat(house.lng),
-    };
+    return result.affected;
   }
 }

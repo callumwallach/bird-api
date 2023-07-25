@@ -4,34 +4,57 @@ import { Repository } from 'typeorm';
 import { Residency } from './residency.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AddResidencyDto } from './dtos/add-residency.dto';
+import { House } from 'src/house/house.entity';
 
 export type MockType<T> = {
   [P in keyof T]?: jest.Mock<{}>;
 };
 
-// @ts-ignore
-export const repositoryMockFactory: () => MockType<Repository<any>> = jest.fn(
-  () => ({
-    findOne: jest.fn((entity) => entity),
-    create: jest.fn((dto) => {
-      return { ...dto, id: 1, created_at: new Date() };
-    }),
-    save: jest.fn((dto) => dto),
-    // ...
-  }),
-);
-
 describe('ResidencyService', () => {
   let service: ResidencyService;
   let repositoryMock: MockType<Repository<Residency>>;
+  //  let repositoryMockFactory: () => MockType<Repository<any>>;
 
   beforeEach(async () => {
+    // // @ts-ignore
+    // repositoryMockFactory = jest.fn(() => ({
+    //   findOne: jest.fn((entity) => entity),
+    //   create: jest.fn((dto) => {
+    //     return { ...dto, id: 1, created_at: new Date() };
+    //   }),
+    //   save: jest.fn((dto) => dto),
+    // }));
+
+    // const module: TestingModule = await Test.createTestingModule({
+    //   providers: [
+    //     ResidencyService,
+    //     {
+    //       provide: getRepositoryToken(Residency),
+    //       useFactory: repositoryMockFactory,
+    //     },
+    //   ],
+    // }).compile();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ResidencyService,
         {
           provide: getRepositoryToken(Residency),
-          useFactory: repositoryMockFactory,
+          useValue: {
+            create: ({ birds, eggs }) => {
+              const residency = {
+                id: Math.floor(Math.random() * 9999),
+                birds,
+                eggs,
+                created_at: new Date(),
+              } as Residency;
+              return residency;
+            },
+            findOne: (residency: Residency) => residency,
+            save: (residency: Residency) => {
+              return Promise.resolve(residency);
+            },
+          },
         },
       ],
     }).compile();
@@ -45,20 +68,11 @@ describe('ResidencyService', () => {
   });
 
   it('should create a residency', async () => {
-    const now = new Date();
-    const house = null;
+    const house = { id: '1' } as House;
     const dto: AddResidencyDto = { birds: 2, eggs: 5 };
-    const residency = {
-      id: 1,
-      birds: dto.birds,
-      eggs: dto.eggs,
-      house: house,
-      created_at: now,
-    };
-    // Now you can control the return value of your mock's methods
-    //repositoryMock.findOne.mockReturnValue(residency);
-    expect(await service.createResidency(dto, house)).toEqual(residency);
-    // And make assertions on how often and with what params your mock's methods are called
-    //expect(repositoryMock.findOne).toHaveBeenCalledWith(residency);
+    const created = await service.createResidency(dto, house);
+    expect(created.birds).toEqual(dto.birds);
+    expect(created.eggs).toEqual(dto.eggs);
+    expect(created.house.id === '1').toEqual(house.id === '1');
   });
 });

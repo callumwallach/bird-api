@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { HouseService } from '../house/house.service';
 
@@ -7,6 +7,8 @@ import { HouseService } from '../house/house.service';
 */
 @Injectable()
 export class CronjobsService {
+  private readonly logger = new Logger(CronjobsService.name);
+
   constructor(@Inject(HouseService) private houseService: HouseService) {}
 
   /*
@@ -17,6 +19,8 @@ export class CronjobsService {
   pruneInactiveHouses() {
     const pruneFromDate = new Date();
     pruneFromDate.setFullYear(pruneFromDate.getFullYear() - 1);
-    this.houseService.pruneHouses(pruneFromDate);
+    const affected = this.houseService.pruneHouses(pruneFromDate);
+    this.logger.log(`Prune cron job ran affecting ${affected} houses`);
+    return affected;
   }
 }
